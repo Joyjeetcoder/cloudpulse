@@ -1,0 +1,9 @@
+subscription_id  = "YOUR-AZURE-SUBSCRIPTION-ID"
+location         = "centralindia"
+project_name     = "cloudpulse"
+vm_size          = "Standard_B1ms"
+admin_username   = "cloudpulseadmin"
+ssh_public_key   = "ssh-ed25519 REPLACE-WITH-YOUR-PUBLIC-KEY cloudpulse"
+ssh_allowed_cidr = "YOUR.PUBLIC.IP.ADDRESS/32"
+enable_github_deploy = true
+github_repository = "YOUR_GITHUB_USERNAME/cloudpulse"

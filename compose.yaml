@@ -1,0 +1,23 @@
+services:
+  cloudpulse:
+    build: .
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      FRONTEND_DIR: /app/static
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - cloudpulse-data:/data
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  cloudpulse-data:

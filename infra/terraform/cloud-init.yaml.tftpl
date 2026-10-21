@@ -1,0 +1,20 @@
+#cloud-config
+package_update: true
+packages:
+  - docker.io
+  - ca-certificates
+  - curl
+write_files:
+  - path: /opt/cloudpulse/bootstrap.sh
+    permissions: '0750'
+    owner: root:root
+    encoding: b64
+    content: ${bootstrap_base64}
+  - path: /opt/cloudpulse/deploy.sh
+    permissions: '0750'
+    owner: root:root
+    encoding: b64
+    content: ${deploy_base64}
+runcmd:
+  - [systemctl, enable, --now, docker]
+  - [bash, /opt/cloudpulse/bootstrap.sh, '${hostname}']

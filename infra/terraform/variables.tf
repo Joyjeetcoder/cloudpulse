@@ -1,0 +1,59 @@
+variable "subscription_id" {
+  type        = string
+  description = "Azure subscription ID with credits and permission to create resources."
+}
+
+variable "location" {
+  type        = string
+  default     = "centralindia"
+  description = "Choose a region permitted by your subscription. VM size availability varies."
+}
+
+variable "project_name" {
+  type    = string
+  default = "cloudpulse"
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{2,15}$", var.project_name))
+    error_message = "Use 3-16 lowercase letters, digits, or hyphens; start with a letter."
+  }
+}
+
+variable "vm_size" {
+  type    = string
+  default = "Standard_B1ms"
+}
+
+variable "admin_username" {
+  type    = string
+  default = "cloudpulseadmin"
+}
+
+variable "ssh_public_key" {
+  type        = string
+  description = "Public SSH key contents (one line). Never supply a private key."
+}
+
+variable "ssh_allowed_cidr" {
+  type        = string
+  description = "Your public IPv4 address followed by /32. SSH is restricted to this address."
+  validation {
+    condition     = can(cidrnetmask(var.ssh_allowed_cidr)) && endswith(var.ssh_allowed_cidr, "/32")
+    error_message = "Supply your own public IPv4 address with /32, never 0.0.0.0/0."
+  }
+}
+
+variable "enable_github_deploy" {
+  type        = bool
+  default     = false
+  description = "Create a managed identity, GitHub OIDC trust, and a role scoped to this VM. Requires role-assignment permission."
+}
+
+variable "github_repository" {
+  type        = string
+  default     = ""
+  description = "Exact owner/cloudpulse repository name for GitHub Actions deployment; not the test repository."
+  validation {
+    condition     = var.github_repository == "" || can(regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", var.github_repository))
+    error_message = "Use an owner/repository name."
+  }
+}
