@@ -14,7 +14,7 @@ CloudPulse receives a signed workflow-completion webhook, retrieves failed-job l
 - Gemini structured JSON output, schema validation, and an inconclusive state for unsupported explanations.
 - A React dashboard with status, probable cause, exact supporting lines, suggested fix, and a GitHub link.
 - Authenticated dashboard APIs, manual import of completed runs, and manual analysis retry.
-- Docker, an Azure VM Terraform configuration, automatic HTTPS, and a GitHub Actions build/deploy workflow.
+- Docker, an Azure VM Terraform configuration, automatic HTTPS, and a GitHub Actions build workflow. The pipeline publishes an immutable image digest; deploying it to the VM is a separate step, either automated through the optional Azure OIDC identity or by running `deploy/deploy.sh` over SSH.
 - A separate companion repository with repeatable real CI failures.
 
 ## Setup guides
@@ -42,6 +42,7 @@ Use the Azure route if your priority is an internet-accessible demonstration wit
 | `.github/workflows/cloudpulse.yml` | CI, container publishing, and optional Azure deployment |
 | `.env.example` | Configuration template; copy to private `.env` |
 | `scripts/make_secrets.py` | Generates separate webhook and dashboard secrets on your computer |
+| `scripts/teardown.sh` | Backs up the run database, destroys the Azure resources, and verifies nothing billable is left |
 
 ## Quick local command, after configuring `.env`
 
@@ -59,13 +60,31 @@ Open `http://localhost:8000` and enter `DASHBOARD_TOKEN`. To receive GitHub webh
 - Automatic retries can repeat a paid Gemini request if a response is lost or the process stops after generation. Request processing is recoverable, but provider billing is not exactly-once.
 - The app examines completed runs. It does not stream running build logs or predict future failures.
 - Retry/import endpoints require the dashboard token. The public repository does not make your private keys public.
+- Your Azure subscription may restrict which regions accept resources. Check the allowlist before choosing `location`; a rejected region fails the whole apply. The `az` command line can be refused where the ARM API succeeds, so verify with `terraform plan` and `terraform apply` rather than a standalone `az network ... create`.
+- The SSH rule matches your **public** IPv4 address. If your connection comes from a rotating NAT pool, a single `/32` rule will fail intermittently. Use the range that covers the pool, and expect to update it when the address changes.
 
 ## Verification status
 
-This delivery was **not executed locally**. No credentialed API call, browser run, package installation, Docker build, or Terraform plan/apply was performed during preparation. The included tests are for you and GitHub Actions to run. Follow the demo checklist before presenting the application as working.
+This delivery **has been executed**. The following were run and observed:
+
+- The backend checks and the frontend build pass in the `CloudPulse CI and Deploy` workflow.
+- The container image builds and publishes to GHCR, and a public image is pulled by the VM over an anonymous registry login.
+- The application was deployed to an Azure VM with Terraform, and a valid Let's Encrypt certificate was issued for the Azure DNS hostname.
+- `GET /healthz` returns `{"status":"ok"}`, the dashboard is served over HTTPS, and `/api/*` rejects a missing token with `401`.
+- A signed `workflow_run` delivery returned `202`, and a signed `ping` returned `{"status":"pong"}`; an invalid signature returned `401`.
+- A real failed workflow from the companion repository was imported and analysed end to end. Gemini returned the category `Dependency error` with three evidence references, and every reference matched a line in the excerpt that was sent.
+- The Gemini free tier enforces a **20 requests per day per model** quota and resets at 00:00 Pacific. The quota limit is separate from the location gate described below.
+
+Follow the demo checklist before presenting, and record your own observations.
+
+### Known provider behaviour
+
+Google applies a **country restriction to the caller's IP address** on the Gemini free tier, not to the account or the API key. The same key can succeed from one network and fail with `User location is not supported for the API use` from another, and switching keys does not help. Two ways out: deploy the VM to a region whose address range Google recognises, or enable billing on the Google Cloud project. The former was confirmed working from an Azure address in `indiasouthcentral`; the free tier's daily quota still applies and still resets daily.
 
 Direct dependency versions are specified. A frontend lockfile is intentionally not fabricated: your first `npm install` creates `package-lock.json`; commit that file afterward to improve repeatability. The Dockerfile and CI use `npm ci` once a lockfile exists.
 
 ## Cost
 
 Gemini API charges or quotas belong to your Google project. Azure credits cover eligible Azure infrastructure, not Gemini calls. VM compute, its disk, and its public IP can incur charges. Verify your subscription, region, quota, and displayed price before applying Terraform; use the cleanup instructions after the demo.
+
+`scripts/teardown.sh` removes every billable resource: it backs up the run database, runs `terraform destroy`, and verifies that no resource group, disk, or public IP is left behind. Deallocating the VM alone stops compute only, because the managed disk and the static public IP keep billing.

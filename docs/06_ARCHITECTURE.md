@@ -56,6 +56,8 @@ Qualitative uncertainty is the model's judgment, not a statistically calibrated 
 
 Raw provider outputs are not exposed before schema validation. Known application secrets and common token/password patterns are redacted before saving logs or sending excerpts, and known secrets are also removed from displayed narrative fields. Redaction is best effort: avoid printing secrets in your CI workflows in the first place. Google's data-use rules differ by service/tier; use only your public demonstration logs and review your Google project's terms before sending other data.
 
+Two provider limits shape a deployment and are worth stating explicitly. The **free tier allows 20 requests per day per model**, per project, and the counter resets at 00:00 Pacific; a burst of test runs can exhaust it, and the queue then reports a rate-limit error while preserving the original build conclusion. Separately, the free tier applies a **country restriction to the caller's IP address**, so the same key can succeed from one network and fail from another with `User location is not supported for the API use`. This is not an account or key problem, and rotating keys does not help: the address is what is checked. Deploying to a region whose address range Google recognises, or enabling billing on the Google Cloud project, are the two ways out.
+
 ## API
 
 All `/api/*` endpoints require `Authorization: Bearer <DASHBOARD_TOKEN>`. The webhook uses its separate HMAC secret. The frontend is built into the same image and served at the same origin, so no permissive CORS setup is needed.
@@ -117,7 +119,7 @@ The deployment script pulls a new image first, replaces the application containe
 - Background work is recoverable, but one Gemini request may be billed more than once after interruption/retry.
 - Data is not replicated. Back up the VM's data before replacing/deleting infrastructure.
 - No retention job automatically deletes old logs or container images. Monitor disk space during extended use.
-- Source was reviewed but not executed for this delivery; your acceptance checklist is the verification record.
+- Source was reviewed and then executed: the pipeline builds and publishes the image, the Azure deployment was provisioned and served over HTTPS, and a real failed workflow was analysed end to end with evidence references that matched the excerpt. Your acceptance checklist remains the verification record for your own account.
 
 ## Official references consulted
 
