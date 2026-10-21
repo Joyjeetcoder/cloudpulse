@@ -18,18 +18,19 @@ Return only the required JSON object."""
 
 # Gemini accepts only a subset of JSON Schema. Keep length and evidence
 # constraints in the Pydantic model, where responses are checked after receipt.
+# Schema type names use the API's uppercase enum (OBJECT, STRING, ARRAY, BOOLEAN).
 ANALYSIS_SCHEMA = {
-    "type": "object",
+    "type": "OBJECT",
     "properties": {
-        "category": {"type": "string", "enum": [
+        "category": {"type": "STRING", "enum": [
             "Test failure", "Dependency error", "Syntax/build error",
             "Configuration error", "Infrastructure error", "Other", "Unknown",
         ]},
-        "root_cause": {"type": "string"},
-        "evidence_ids": {"type": "array", "items": {"type": "string"}},
-        "suggested_fix": {"type": "string"},
-        "uncertainty": {"type": "string", "enum": ["low", "medium", "high"]},
-        "insufficient_evidence": {"type": "boolean"},
+        "root_cause": {"type": "STRING"},
+        "evidence_ids": {"type": "ARRAY", "items": {"type": "STRING"}},
+        "suggested_fix": {"type": "STRING"},
+        "uncertainty": {"type": "STRING", "enum": ["low", "medium", "high"]},
+        "insufficient_evidence": {"type": "BOOLEAN"},
     },
     "required": [
         "category", "root_cause", "evidence_ids", "suggested_fix",
@@ -49,7 +50,8 @@ async def analyze(settings: Settings, metadata: dict, excerpt: list[dict]) -> tu
         }, ensure_ascii=False)}]}],
         "generationConfig": {
             "maxOutputTokens": settings.gemini_max_output_tokens,
-            "responseFormat": {"text": {"mimeType": "APPLICATION_JSON", "schema": ANALYSIS_SCHEMA}},
+            "responseMimeType": "application/json",
+            "responseSchema": ANALYSIS_SCHEMA,
         },
     }
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.gemini_model}:generateContent"

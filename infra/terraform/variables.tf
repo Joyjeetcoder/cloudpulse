@@ -35,10 +35,10 @@ variable "ssh_public_key" {
 
 variable "ssh_allowed_cidr" {
   type        = string
-  description = "Your public IPv4 address followed by /32. SSH is restricted to this address."
+  description = "Your public IPv4 address as a CIDR. SSH is restricted to this range. Use /32 for a static address, or a wider prefix (for example /29) when your ISP assigns addresses from a rotating pool."
   validation {
-    condition     = can(cidrnetmask(var.ssh_allowed_cidr)) && endswith(var.ssh_allowed_cidr, "/32")
-    error_message = "Supply your own public IPv4 address with /32, never 0.0.0.0/0."
+    condition     = can(cidrnetmask(var.ssh_allowed_cidr)) && can(tonumber(split("/", var.ssh_allowed_cidr)[1])) && tonumber(split("/", var.ssh_allowed_cidr)[1]) >= 24 && tonumber(split("/", var.ssh_allowed_cidr)[1]) <= 32 && var.ssh_allowed_cidr != "0.0.0.0/0"
+    error_message = "Supply your own public IPv4 CIDR (a /32 for a fixed address, or a wider prefix such as /29 for a rotating NAT pool). Never 0.0.0.0/0."
   }
 }
 

@@ -28,6 +28,7 @@ Start with the error shown in the dashboard or GitHub Actions. Do not paste API 
 | Gemini 400/401/403 | Correct API key, Gemini API restrictions, Google project eligibility/billing, and supported request/model. |
 | Gemini 404 | `GEMINI_MODEL` is unavailable to your project or no longer exists. Choose an enabled text model supporting structured output. |
 | Gemini quota/rate limit | Check AI Studio quotas for that model/project. Wait, reduce repeated test runs, or enable eligible paid usage if you choose. Azure credit does not pay this bill. |
+| Gemini "User location is not supported for the API use" | Google gates the free tier on the **caller's IP**, not on the account or key. The same key can work from one network and fail from another. Move the VM to a region whose address range Google recognises, or enable billing on the Google Cloud project. A different API key does not help. |
 | Gemini did not finish | Output limit or provider filtering. You can raise `GEMINI_MAX_OUTPUT_TOKENS` up to 8192, at a possible cost increase, or choose a suitable model. |
 | Invalid/empty analysis | The response did not match the required schema. It is not shown as a completed explanation. Retry once or review model support. |
 | Needs review | The model reported insufficient evidence, cited a missing line, or the failure had no usable failed-job logs. Inspect the original workflow. |
